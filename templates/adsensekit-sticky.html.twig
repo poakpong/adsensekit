@@ -5,25 +5,27 @@
  *
  * Variables:
  * - publisher_id, ad_slot, ad_format, full_width_responsive.
- *
- * Behavior: the close button hides the wrapper for the current page only.
- * Reloading the page brings the ad back (no localStorage / cookies).
  */
 #}
 {% if publisher_id and ad_slot %}
   <div class="adsensekit-sticky" role="complementary" aria-label="{{ 'Advertisement'|t }}">
-    <button type="button"
-            class="adsensekit-sticky__close"
-            aria-label="{{ 'Close advertisement'|t }}"
-            title="{{ 'Close'|t }}">×</button>
-    <ins class="adsbygoogle"
-         style="display:block"
-         data-ad-client="{{ publisher_id }}"
-         data-ad-slot="{{ ad_slot }}"
-         data-ad-format="{{ ad_format }}"
-         data-full-width-responsive="{{ full_width_responsive ? 'true' : 'false' }}"></ins>
-    <script>
-      (adsbygoogle = window.adsbygoogle || []).push({});
-    </script>
+    <div class="adsensekit-sticky__bar">
+      <span class="adsensekit-sticky__label">{{ 'โฆษณา - Advertising'|t }}</span>
+      <button type="button"
+              class="adsensekit-sticky__close"
+              aria-label="{{ 'Close advertisement'|t }}"
+              title="{{ 'Close'|t }}">×</button>
+    </div>
+    <div class="adsensekit-sticky__ad">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="{{ publisher_id }}"
+           data-ad-slot="{{ ad_slot }}"
+           data-ad-format="{{ ad_format }}"
+           data-full-width-responsive="{{ full_width_responsive ? 'true' : 'false' }}"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </div>
   </div>
 {% endif %}
