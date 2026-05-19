@@ -2,32 +2,36 @@
  * AdsenseKit styles.
  *
  * Provides:
- * - .adsensekit-ad: shared frame + "Advertising" label for all ad units.
- * - .adsensekit-ad--injected: extra vertical spacing for in-content injector.
+ * - .adsensekit-ad: shared wrapper for all ad units (block + injected).
+ * - .adsensekit-ad__label: dark gray "โฆษณา - Advertising" bar.
+ * - .adsensekit-ad__content: light gray area holding the <ins> unit.
+ * - .adsensekit-ad--injected: extra vertical margin for in-content injector.
  * - .adsensekit-sticky: fixed-bottom ad container with close button.
  */
 
-/* ---- Shared frame for every ad unit ---- */
+/* ---- Shared wrapper ---- */
 .adsensekit-ad {
-  position: relative;
-  border: 1px solid #e0e0e0;
-  background: #fafafa;
-  border-radius: 4px;
+  width: 100%;
   box-sizing: border-box;
-  text-align: center;
-  margin: 0 auto 32px auto;
+  margin: 0 auto;
 }
 
-.adsensekit-ad::before {
-  content: "โฆษณา - Advertising";
-  display: block;
-  padding: 4px 8px;
+/* ---- Label bar ---- */
+.adsensekit-ad__label {
+  background: #555;
+  color: #fff;
   font-size: 11px;
   line-height: 1.4;
-  color: #fff;
-  background: #555;
+  padding: 4px 8px;
   text-align: left;
   letter-spacing: 0.02em;
+}
+
+/* ---- Ad content area ---- */
+.adsensekit-ad__content {
+  background: #f0f0f0;
+  padding: 10px 0;
+  text-align: center;
 }
 
 .adsensekit-ad .adsbygoogle {
@@ -35,10 +39,9 @@
   margin: 0 auto;
 }
 
-/* ---- Injector: extra spacing to separate from content ---- */
+/* ---- Injector: vertical separation from surrounding content ---- */
 .adsensekit-ad--injected {
   margin: 32px auto;
-  max-width: 100%;
 }
 
 /* ---- Sticky bottom ad ---- */
@@ -100,11 +103,4 @@
 
 .adsensekit-sticky--closed {
   display: none !important;
-}
-
-/* Small screens: tighten frame padding. */
-@media (max-width: 600px) {
-  .adsensekit-ad--injected {
-    margin: 24px auto;
-  }
 }

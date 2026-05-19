@@ -203,12 +203,15 @@ function adsensekit_build_ad_markup($publisher_id, $ad_slot, $ad_format, $full_w
   $full_width_responsive = $full_width_responsive === 'true' ? 'true' : 'false';
 
   return '<div class="adsensekit-ad adsensekit-ad--injected">'
+    . '<div class="adsensekit-ad__label">โฆษณา - Advertising</div>'
+    . '<div class="adsensekit-ad__content">'
     . '<ins class="adsbygoogle" style="display:block"'
     . ' data-ad-client="' . $publisher_id . '"'
     . ' data-ad-slot="' . $ad_slot . '"'
     . ' data-ad-format="' . $ad_format . '"'
     . ' data-full-width-responsive="' . $full_width_responsive . '"></ins>'
     . '<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>'
+    . '</div>'
     . '</div>';
 }
 
