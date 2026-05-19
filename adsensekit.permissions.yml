@@ -1,0 +1,4 @@
+administer adsensekit:
+  title: 'Administer AdsenseKit'
+  description: 'Configure Google AdSense Publisher ID and injector settings.'
+  restrict access: true

@@ -1,0 +1,13 @@
+styles:
+  version: 1.x
+  css:
+    component:
+      css/adsensekit.css: {}
+
+sticky:
+  version: 1.x
+  js:
+    js/adsensekit.sticky.js: {}
+  dependencies:
+    - core/drupal
+    - core/once

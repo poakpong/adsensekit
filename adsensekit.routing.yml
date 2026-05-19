@@ -1,0 +1,7 @@
+adsensekit.settings:
+  path: '/admin/config/services/adsensekit'
+  defaults:
+    _form: '\Drupal\adsensekit\Form\AdsensekitSettingsForm'
+    _title: 'AdsenseKit settings'
+  requirements:
+    _permission: 'administer adsensekit'

@@ -1,0 +1,75 @@
+adsensekit.settings:
+  type: config_object
+  label: 'AdsenseKit settings'
+  mapping:
+    publisher_id:
+      type: string
+      label: 'Publisher ID (pub-XXXXXXXXXXXXXXXX)'
+    enabled:
+      type: boolean
+      label: 'Enable AdSense script output'
+    injector:
+      type: mapping
+      label: 'Content injector settings'
+      mapping:
+        enabled:
+          type: boolean
+          label: 'Enable content injector'
+        ad_slot:
+          type: string
+          label: 'Ad slot ID for injected ads'
+        ad_format:
+          type: string
+          label: 'Ad format'
+        full_width_responsive:
+          type: boolean
+          label: 'Full width responsive'
+        every_n_paragraphs:
+          type: integer
+          label: 'Insert after every N paragraphs'
+        max_inserts:
+          type: integer
+          label: 'Maximum number of ads to inject per node'
+        node_types:
+          type: sequence
+          label: 'Content types to inject into'
+          sequence:
+            type: string
+            label: 'Content type'
+        view_modes:
+          type: sequence
+          label: 'View modes to inject into'
+          sequence:
+            type: string
+            label: 'View mode'
+
+block.settings.adsensekit_ad:
+  type: block_settings
+  label: 'AdsenseKit Ad block'
+  mapping:
+    ad_slot:
+      type: string
+      label: 'Ad slot'
+    ad_format:
+      type: string
+      label: 'Ad format'
+    full_width_responsive:
+      type: boolean
+      label: 'Full width responsive'
+    custom_style:
+      type: string
+      label: 'Custom inline style'
+
+block.settings.adsensekit_sticky:
+  type: block_settings
+  label: 'AdsenseKit sticky bottom block'
+  mapping:
+    ad_slot:
+      type: string
+      label: 'Ad slot'
+    ad_format:
+      type: string
+      label: 'Ad format'
+    full_width_responsive:
+      type: boolean
+      label: 'Full width responsive'

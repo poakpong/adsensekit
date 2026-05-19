@@ -1,0 +1,192 @@
+<?php
+
+/**
+ * @file
+ * AdsenseKit module: head script and content injector.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\node\NodeInterface;
+
+/**
+ * Implements hook_help().
+ */
+function adsensekit_help($route_name, RouteMatchInterface $route_match) {
+  if ($route_name === 'help.page.adsensekit') {
+    return '<p>' . t('AdsenseKit integrates Google AdSense with Drupal: a global publisher script, configurable ad blocks, and an in-content injector.') . '</p>';
+  }
+}
+
+/**
+ * Implements hook_page_attachments().
+ *
+ * Inject the AdSense loader script (adsbygoogle.js) into <head> on every page
+ * when a publisher ID is configured and the module is enabled.
+ *
+ * Note: the loader script must be loaded only ONCE per page even when there
+ * are multiple ad units. The browser-side adsbygoogle.js handles all <ins>
+ * elements that already exist or are added later, so we attach it globally.
+ */
+function adsensekit_page_attachments(array &$attachments) {
+  $config = \Drupal::config('adsensekit.settings');
+  if (!$config->get('enabled')) {
+    return;
+  }
+
+  $publisher_id = adsensekit_normalize_publisher_id($config->get('publisher_id'));
+  if (empty($publisher_id)) {
+    return;
+  }
+
+  // Add the adsbygoogle.js script tag in <head> with async + crossorigin.
+  $attachments['#attached']['html_head'][] = [
+    [
+      '#tag' => 'script',
+      '#attributes' => [
+        'async' => TRUE,
+        'src' => 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' . $publisher_id,
+        'crossorigin' => 'anonymous',
+      ],
+    ],
+    'adsensekit_adsbygoogle_loader',
+  ];
+
+  // Frame styles are needed wherever an ad may render (block, injected, or
+  // sticky-bottom), so attach site-wide whenever AdSense is enabled. The
+  // injector outputs raw HTML inside the body field, so it can't attach a
+  // library itself — that's why we attach it globally here.
+  $attachments['#attached']['library'][] = 'adsensekit/styles';
+
+  // Cache by config so changes to publisher ID invalidate this attachment.
+  $attachments['#cache']['tags'][] = 'config:adsensekit.settings';
+}
+
+/**
+ * Normalize a publisher ID to the "ca-pub-XXXX" form expected by AdSense.
+ *
+ * Users enter "pub-XXXX" in the form (matching what they see in AdSense),
+ * but the data-ad-client / script src parameter must be prefixed with "ca-".
+ */
+function adsensekit_normalize_publisher_id($raw) {
+  $raw = trim((string) $raw);
+  if ($raw === '') {
+    return '';
+  }
+  if (strpos($raw, 'ca-pub-') === 0) {
+    return $raw;
+  }
+  if (strpos($raw, 'pub-') === 0) {
+    return 'ca-' . $raw;
+  }
+  return '';
+}
+
+/**
+ * Implements hook_node_view().
+ *
+ * Inject AdSense ads into rendered node body fields after every N paragraphs.
+ */
+function adsensekit_node_view(array &$build, NodeInterface $node, $display, $view_mode) {
+  $config = \Drupal::config('adsensekit.settings');
+  if (!$config->get('enabled') || !$config->get('injector.enabled')) {
+    return;
+  }
+
+  $allowed_types = $config->get('injector.node_types') ?: [];
+  if (!empty($allowed_types) && !in_array($node->bundle(), $allowed_types, TRUE)) {
+    return;
+  }
+
+  $allowed_modes = $config->get('injector.view_modes') ?: ['full'];
+  if (!in_array($view_mode, $allowed_modes, TRUE)) {
+    return;
+  }
+
+  if (!isset($build['body'])) {
+    return;
+  }
+
+  // Drupal requires post_render callbacks to be a method on a class
+  // implementing TrustedCallbackInterface (or an anonymous function), so we
+  // reference the AdInjector class. See https://www.drupal.org/node/2966725.
+  $build['body']['#post_render'][] = [\Drupal\adsensekit\Render\AdInjector::class, 'postRender'];
+
+  // Make sure cache changes when injector config changes.
+  $build['#cache']['tags'][] = 'config:adsensekit.settings';
+}
+
+/**
+ * Build a single AdSense <ins> + push() markup wrapped in the framed
+ * "Advertising" container used by the injector.
+ *
+ * The wrapper carries `.adsensekit-ad.adsensekit-ad--injected` which CSS
+ * styles with a frame, "โฆษณา - Advertising" label, and extra vertical
+ * spacing to separate the ad from surrounding paragraphs.
+ */
+function adsensekit_build_ad_markup($publisher_id, $ad_slot, $ad_format, $full_width_responsive) {
+  $publisher_id = htmlspecialchars($publisher_id, ENT_QUOTES, 'UTF-8');
+  $ad_slot = htmlspecialchars($ad_slot, ENT_QUOTES, 'UTF-8');
+  $ad_format = htmlspecialchars($ad_format, ENT_QUOTES, 'UTF-8');
+  $full_width_responsive = $full_width_responsive === 'true' ? 'true' : 'false';
+
+  return '<div class="adsensekit-ad adsensekit-ad--injected">'
+    . '<ins class="adsbygoogle" style="display:block"'
+    . ' data-ad-client="' . $publisher_id . '"'
+    . ' data-ad-slot="' . $ad_slot . '"'
+    . ' data-ad-format="' . $ad_format . '"'
+    . ' data-full-width-responsive="' . $full_width_responsive . '"></ins>'
+    . '<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>'
+    . '</div>';
+}
+
+/**
+ * Inject the ad markup after every Nth top-level <p> tag in the HTML string.
+ *
+ * Uses a regex over the source string instead of DOMDocument because the body
+ * field output may contain partial HTML or shortcodes that DOMDocument would
+ * mangle. We only target </p>.
+ */
+function adsensekit_inject_after_paragraphs($html, $ad_markup, $every_n, $max_inserts) {
+  $paragraph_count = 0;
+  $insert_count = 0;
+
+  $result = preg_replace_callback(
+    '#</p\s*>#i',
+    function ($match) use ($ad_markup, $every_n, $max_inserts, &$paragraph_count, &$insert_count) {
+      $paragraph_count++;
+      if ($paragraph_count % $every_n === 0) {
+        if ($max_inserts === 0 || $insert_count < $max_inserts) {
+          $insert_count++;
+          return $match[0] . "\n" . $ad_markup . "\n";
+        }
+      }
+      return $match[0];
+    },
+    $html
+  );
+
+  return $result === NULL ? $html : $result;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function adsensekit_theme($existing, $type, $theme, $path) {
+  $base = [
+    'publisher_id' => '',
+    'ad_slot' => '',
+    'ad_format' => 'auto',
+    'full_width_responsive' => TRUE,
+  ];
+
+  return [
+    'adsensekit_ad' => [
+      'variables' => $base + ['custom_style' => 'display:block'],
+      'template' => 'adsensekit-ad',
+    ],
+    'adsensekit_sticky' => [
+      'variables' => $base,
+      'template' => 'adsensekit-sticky',
+    ],
+  ];
+}

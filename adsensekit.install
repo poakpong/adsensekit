@@ -1,0 +1,31 @@
+<?php
+
+/**
+ * @file
+ * Install/uninstall hooks for AdsenseKit.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function adsensekit_install() {
+  \Drupal::configFactory()->getEditable('adsensekit.settings')
+    ->set('publisher_id', '')
+    ->set('enabled', FALSE)
+    ->set('injector.enabled', FALSE)
+    ->set('injector.ad_slot', '')
+    ->set('injector.ad_format', 'auto')
+    ->set('injector.full_width_responsive', TRUE)
+    ->set('injector.every_n_paragraphs', 3)
+    ->set('injector.max_inserts', 3)
+    ->set('injector.node_types', [])
+    ->set('injector.view_modes', ['full'])
+    ->save();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function adsensekit_uninstall() {
+  \Drupal::configFactory()->getEditable('adsensekit.settings')->delete();
+}

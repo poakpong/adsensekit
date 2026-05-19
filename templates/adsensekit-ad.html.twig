@@ -1,0 +1,29 @@
+{#
+/**
+ * @file
+ * AdsenseKit block ad unit.
+ *
+ * Variables:
+ * - publisher_id: e.g. "ca-pub-XXXXXXXXXXXXXXXX" (already normalized).
+ * - ad_slot: numeric data-ad-slot.
+ * - ad_format: e.g. "auto".
+ * - full_width_responsive: bool.
+ * - custom_style: inline CSS for the <ins> tag.
+ *
+ * The .adsensekit-ad wrapper provides the frame + "Advertising" label
+ * via CSS (see adsensekit/styles library, attached from the block plugin).
+ */
+#}
+{% if publisher_id and ad_slot %}
+  <div class="adsensekit-ad adsensekit-ad--block">
+    <ins class="adsbygoogle"
+         style="{{ custom_style }}"
+         data-ad-client="{{ publisher_id }}"
+         data-ad-slot="{{ ad_slot }}"
+         data-ad-format="{{ ad_format }}"
+         data-full-width-responsive="{{ full_width_responsive ? 'true' : 'false' }}"></ins>
+    <script>
+      (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+  </div>
+{% endif %}

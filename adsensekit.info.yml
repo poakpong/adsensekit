@@ -1,0 +1,6 @@
+name: 'AdsenseKit'
+type: module
+description: 'Integrate Google AdSense: publisher script, ad blocks, and content injector.'
+package: 'AdsenseKit'
+core_version_requirement: ^10 || ^11
+configure: adsensekit.settings

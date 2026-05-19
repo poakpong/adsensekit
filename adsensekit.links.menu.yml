@@ -1,0 +1,5 @@
+adsensekit.settings:
+  title: 'AdsenseKit'
+  description: 'Configure Google AdSense integration.'
+  parent: system.admin_config_services
+  route_name: adsensekit.settings
