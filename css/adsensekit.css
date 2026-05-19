@@ -16,7 +16,6 @@
   border-radius: 4px;
   box-sizing: border-box;
   text-align: center;
-  overflow: hidden;
   margin: 0 auto 32px auto;
 }
 
@@ -84,9 +83,6 @@
 .adsensekit-sticky .adsbygoogle {
   display: block;
   margin: 0 auto;
-  /* Keep the unit reasonably small on the screen. */
-  max-height: 110px;
-  overflow: hidden;
 }
 
 .adsensekit-sticky__close {
