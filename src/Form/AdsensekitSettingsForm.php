@@ -2,6 +2,7 @@
 
 namespace Drupal\adsensekit\Form;
 
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -18,11 +19,17 @@ class AdsensekitSettingsForm extends ConfigFormBase {
   protected EntityTypeBundleInfoInterface $bundleInfo;
 
   /**
+   * Entity type manager for loading roles.
+   */
+  protected EntityTypeManagerInterface $entityTypeManager;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
     $instance = parent::create($container);
     $instance->bundleInfo = $container->get('entity_type.bundle.info');
+    $instance->entityTypeManager = $container->get('entity_type.manager');
     return $instance;
   }
 
@@ -150,6 +157,74 @@ class AdsensekitSettingsForm extends ConfigFormBase {
       '#default_value' => $config->get('injector.view_modes') ?: ['full'],
     ];
 
+    // ---- Page visibility ----
+    $form['injector']['pages'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Page visibility'),
+      '#open' => FALSE,
+    ];
+
+    $form['injector']['pages']['visibility'] = [
+      '#type' => 'radios',
+      '#title' => $this->t('Show injector'),
+      '#options' => [
+        'all'  => $this->t('On all pages'),
+        'show' => $this->t('Only on the listed pages'),
+        'hide' => $this->t('On all pages except the listed pages'),
+      ],
+      '#default_value' => $config->get('injector.pages.visibility') ?: 'all',
+    ];
+
+    $paths = $config->get('injector.pages.paths') ?: [];
+    $form['injector']['pages']['paths_text'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Pages'),
+      '#description' => $this->t('Enter one path per line. Use <code>*</code> as a wildcard (e.g. <code>/blog/*</code>). Use <code>&lt;front&gt;</code> for the front page.'),
+      '#default_value' => implode("\n", $paths),
+      '#rows' => 5,
+      '#states' => [
+        'invisible' => [
+          ':input[name="injector[pages][visibility]"]' => ['value' => 'all'],
+        ],
+      ],
+    ];
+
+    // ---- Role visibility ----
+    $roles = $this->entityTypeManager->getStorage('user_role')->loadMultiple();
+    $role_options = [];
+    foreach ($roles as $role_id => $role) {
+      $role_options[$role_id] = $role->label();
+    }
+
+    $form['injector']['roles'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Role visibility'),
+      '#open' => FALSE,
+    ];
+
+    $form['injector']['roles']['visibility'] = [
+      '#type' => 'radios',
+      '#title' => $this->t('Show injector'),
+      '#options' => [
+        'all'  => $this->t('For all roles'),
+        'show' => $this->t('Only for the selected roles'),
+        'hide' => $this->t('For all roles except the selected'),
+      ],
+      '#default_value' => $config->get('injector.roles.visibility') ?: 'all',
+    ];
+
+    $form['injector']['roles']['roles'] = [
+      '#type' => 'checkboxes',
+      '#title' => $this->t('Roles'),
+      '#options' => $role_options,
+      '#default_value' => $config->get('injector.roles.roles') ?: [],
+      '#states' => [
+        'invisible' => [
+          ':input[name="injector[roles][visibility]"]' => ['value' => 'all'],
+        ],
+      ],
+    ];
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -184,6 +259,13 @@ class AdsensekitSettingsForm extends ConfigFormBase {
     $node_types = array_values(array_filter($injector['node_types'] ?? []));
     $view_modes = array_values(array_filter($injector['view_modes'] ?? []));
 
+    // Parse paths textarea to array, trim and drop blanks.
+    $paths_raw = $injector['pages']['paths_text'] ?? '';
+    $paths = array_values(array_filter(array_map('trim', explode("\n", $paths_raw))));
+
+    // Filter role checkboxes.
+    $roles_selected = array_values(array_filter($injector['roles']['roles'] ?? []));
+
     // Strip "ca-" if user pasted the full form, store the canonical "pub-XXXX".
     $publisher_id = trim((string) $form_state->getValue('publisher_id'));
     if (strpos($publisher_id, 'ca-pub-') === 0) {
@@ -201,6 +283,10 @@ class AdsensekitSettingsForm extends ConfigFormBase {
       ->set('injector.max_inserts', max(0, (int) ($injector['max_inserts'] ?? 3)))
       ->set('injector.node_types', $node_types)
       ->set('injector.view_modes', $view_modes)
+      ->set('injector.pages.visibility', $injector['pages']['visibility'] ?? 'all')
+      ->set('injector.pages.paths', $paths)
+      ->set('injector.roles.visibility', $injector['roles']['visibility'] ?? 'all')
+      ->set('injector.roles.roles', $roles_selected)
       ->save();
 
     parent::submitForm($form, $form_state);

@@ -20,6 +20,10 @@ function adsensekit_install() {
     ->set('injector.max_inserts', 3)
     ->set('injector.node_types', [])
     ->set('injector.view_modes', ['full'])
+    ->set('injector.pages.visibility', 'all')
+    ->set('injector.pages.paths', [])
+    ->set('injector.roles.visibility', 'all')
+    ->set('injector.roles.roles', [])
     ->save();
 }
 
@@ -28,4 +32,24 @@ function adsensekit_install() {
  */
 function adsensekit_uninstall() {
   \Drupal::configFactory()->getEditable('adsensekit.settings')->delete();
+}
+
+/**
+ * Add page and role visibility config keys for the content injector.
+ */
+function adsensekit_update_10101() {
+  $config = \Drupal::configFactory()->getEditable('adsensekit.settings');
+  if ($config->get('injector.pages.visibility') === NULL) {
+    $config->set('injector.pages.visibility', 'all');
+  }
+  if ($config->get('injector.pages.paths') === NULL) {
+    $config->set('injector.pages.paths', []);
+  }
+  if ($config->get('injector.roles.visibility') === NULL) {
+    $config->set('injector.roles.visibility', 'all');
+  }
+  if ($config->get('injector.roles.roles') === NULL) {
+    $config->set('injector.roles.roles', []);
+  }
+  $config->save();
 }

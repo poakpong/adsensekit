@@ -42,6 +42,32 @@ adsensekit.settings:
           sequence:
             type: string
             label: 'View mode'
+        pages:
+          type: mapping
+          label: 'Page visibility'
+          mapping:
+            visibility:
+              type: string
+              label: 'Visibility mode (all/show/hide)'
+            paths:
+              type: sequence
+              label: 'Paths'
+              sequence:
+                type: string
+                label: 'Path'
+        roles:
+          type: mapping
+          label: 'Role visibility'
+          mapping:
+            visibility:
+              type: string
+              label: 'Visibility mode (all/show/hide)'
+            roles:
+              type: sequence
+              label: 'Roles'
+              sequence:
+                type: string
+                label: 'Role ID'
 
 block.settings.adsensekit_ad:
   type: block_settings

@@ -106,6 +106,16 @@ function adsensekit_node_view(array &$build, NodeInterface $node, $display, $vie
     return;
   }
 
+  // Page visibility check.
+  if (!_adsensekit_injector_page_visible($config->get('injector.pages') ?: [])) {
+    return;
+  }
+
+  // Role visibility check.
+  if (!_adsensekit_injector_role_visible($config->get('injector.roles') ?: [])) {
+    return;
+  }
+
   // Drupal requires post_render callbacks to be a method on a class
   // implementing TrustedCallbackInterface (or an anonymous function), so we
   // reference the AdInjector class. See https://www.drupal.org/node/2966725.
@@ -113,6 +123,69 @@ function adsensekit_node_view(array &$build, NodeInterface $node, $display, $vie
 
   // Make sure cache changes when injector config changes.
   $build['#cache']['tags'][] = 'config:adsensekit.settings';
+  // Vary cache by user roles so role-based visibility is respected.
+  $build['#cache']['contexts'][] = 'user.roles';
+}
+
+/**
+ * Check whether the injector should run on the current page.
+ *
+ * @param array $pages_config
+ *   The injector.pages config array with keys 'visibility' and 'paths'.
+ *
+ * @return bool
+ *   TRUE if the injector should run, FALSE to skip.
+ */
+function _adsensekit_injector_page_visible(array $pages_config) {
+  $visibility = $pages_config['visibility'] ?? 'all';
+  $paths = $pages_config['paths'] ?? [];
+
+  if ($visibility === 'all' || empty($paths)) {
+    return TRUE;
+  }
+
+  $current_path = \Drupal::service('path.current')->getPath();
+  $path_matcher = \Drupal::service('path.matcher');
+
+  // Resolve <front> to the actual configured front-page path.
+  $front = \Drupal::config('system.site')->get('page.front') ?: '/';
+  $patterns = str_replace('<front>', $front, implode("\n", $paths));
+
+  // Also test against the URL alias so admins can enter human-readable paths.
+  try {
+    $alias = \Drupal::service('path_alias.manager')->getAliasByPath($current_path);
+  }
+  catch (\Exception $e) {
+    $alias = $current_path;
+  }
+
+  $match = $path_matcher->matchPath($current_path, $patterns)
+        || $path_matcher->matchPath($alias, $patterns);
+
+  return ($visibility === 'show') ? $match : !$match;
+}
+
+/**
+ * Check whether the injector should run for the current user's roles.
+ *
+ * @param array $roles_config
+ *   The injector.roles config array with keys 'visibility' and 'roles'.
+ *
+ * @return bool
+ *   TRUE if the injector should run, FALSE to skip.
+ */
+function _adsensekit_injector_role_visible(array $roles_config) {
+  $visibility = $roles_config['visibility'] ?? 'all';
+  $configured_roles = $roles_config['roles'] ?? [];
+
+  if ($visibility === 'all' || empty($configured_roles)) {
+    return TRUE;
+  }
+
+  $user_roles = \Drupal::currentUser()->getRoles();
+  $match = (bool) array_intersect($configured_roles, $user_roles);
+
+  return ($visibility === 'show') ? $match : !$match;
 }
 
 /**
