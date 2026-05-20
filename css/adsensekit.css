@@ -57,6 +57,7 @@
 .adsensekit-sticky__bar {
   display: flex;
   align-items: center;
+  gap: 10px;
   background: #555;
   padding: 4px 8px;
 }
